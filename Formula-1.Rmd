@@ -1,0 +1,61 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r message=FALSE,warning=FALSE}
+library(tidyverse)
+library(plotly)
+f1 <- read_csv("https://github.com/ruhani13/Dataset/raw/main/race_wins_1950-2020.csv",show_col_types = FALSE)
+constructors<-read_csv("https://github.com/ruhani13/Dataset/raw/main/constructors_championship_1958-2020.csv",show_col_types = FALSE) %>% 
+  filter(Year %in% (2011:2020))
+```
+
+```{r }
+top_drivers<-f1 %>% 
+  group_by(Name) %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+    top_n(15,n)
+best_drivers<-top_drivers %>% 
+  ungroup() %>% 
+  pull(Name)
+```
+
+```{r fig.height=5,fig.width=8}
+top_drivers<-filter(f1,Name %in% best_drivers)
+p<-ggplot(top_drivers,aes(x = forcats::fct_rev(fct_infreq(Name)), fill = Team,text=paste("Race Wins: ", ..count..)))+
+  geom_bar() +
+  coord_flip()+
+  xlab("Drivers")+
+  ylab("Race Wins")+
+  ggtitle("Best Driver since 1950 with most race wins")+
+  theme_classic()+
+  viridis::scale_fill_viridis(discrete=T,option = "D") 
+ggplotly(p,tooltip = c("Team","text")) %>% 
+  hide_legend()
+```
+```{r}
+constructors_champs<-constructors %>% 
+  group_by(Team) %>% 
+  summarise(n=sum(Points) )%>% 
+  arrange(desc(n)) %>% 
+   top_n(10,n)
+best_teams<-constructors_champs %>% 
+  ungroup() %>% 
+  pull(Team) 
+```
+
+```{r fig.height=5,fig.width=8}
+constructors_champs<-filter(constructors,Team %in% best_teams)
+p<-ggplot(constructors_champs,aes(as.factor(Year),Points,col=Team,text=paste("Position: ",Position)))+
+  geom_point(aes(size=Points))+
+  xlab("Year")+
+  ggtitle("F1 constructor standings")+
+ scale_colour_viridis_d(option = "plasma")+
+  theme_classic()
+ggplotly(p,tooltip = c("Team","y","text")) %>% 
+  layout(legend = list(orientation = 'h',y=-0.2))
+
+```
